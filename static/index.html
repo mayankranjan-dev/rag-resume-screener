@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume Screener</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <style>
+    /* ------------------------------------------------------------------
+       Design tokens. Depth comes from stacking bg -> surface ->
+       surface-raised, not from drop shadows. The only box-shadow in the
+       sheet is the accent focus ring.
+       No pure black, no pure white, no purple.
+       ------------------------------------------------------------------ */
+    :root {
+      --bg: #0f1115;
+      --surface: #161a20;
+      --surface-raised: #1d232b;
+      --border: #2a313b;
+      --text: #e6e9ee;
+      --muted: #8b93a1;
+      --accent: #14b8a6;
+      --accent-hover: #2dd4bf;
+      --accent-text: #5eead4;
+      --accent-tint: rgba(20, 184, 166, .08);
+      --accent-ring: rgba(20, 184, 166, .15);
+      --accent-border: rgba(20, 184, 166, .35);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, .08);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, .08);
+      --radius: .5rem;
+
+      /* Hand Bootstrap the same palette so its own components inherit it. */
+      --bs-body-bg: var(--bg);
+      --bs-body-color: var(--text);
+      --bs-secondary-color: var(--muted);
+      --bs-border-color: var(--border);
+      --bs-primary: var(--accent);
+      --bs-primary-rgb: 20, 184, 166;
+      --bs-link-color: var(--accent-text);
+      --bs-link-hover-color: var(--accent);
+      --bs-body-font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      padding-top: 61px;
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container { max-width: 900px; }
+
+    /* ---------------------------- Navbar ---------------------------- */
+    .topbar {
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -.01em;
+    }
+    .ghost-link {
+      font-size: .8125rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s ease;
+    }
+    .ghost-link:hover { color: var(--accent-text); }
+
+    /* ---------------------------- Cards ----------------------------- */
+    .panel {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: .875rem 1.125rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+    .panel-title {
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    .panel-body { padding: 1.125rem; }
+
+    /* Small, muted, sentence-case group labels. No all-caps, no tracking. */
+    .field-label {
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: normal;
+      text-transform: none;
+      margin-bottom: .5rem;
+      display: block;
+    }
+    .help-text {
+      font-size: .8125rem;
+      color: var(--muted);
+      margin: .5rem 0 0;
+    }
+
+    /* --------------------------- Controls --------------------------- */
+    .btn-accent {
+      background-color: var(--accent);
+      border: 1px solid var(--accent);
+      color: var(--bg);
+      font-weight: 600;
+      font-size: .875rem;
+      padding: .5rem 1rem;
+      border-radius: .4375rem;
+      transition: background-color .15s ease, border-color .15s ease;
+    }
+    .btn-accent:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: var(--bg);
+    }
+    .btn-accent:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      color: var(--bg);
+    }
+    .btn-accent:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-ring);
+    }
+
+    .input-surface {
+      background-color: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: .4375rem;
+      font-size: .9375rem;
+      padding: .625rem .75rem;
+      width: 100%;
+      resize: vertical;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .input-surface::placeholder { color: var(--muted); }
+    .input-surface:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-ring);
+      background-color: var(--surface-raised);
+      color: var(--text);
+    }
+    .input-surface:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    /* --------------------------- Dropzone --------------------------- */
+    .dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      background-color: var(--surface-raised);
+      padding: 2rem 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s ease, background-color .15s ease;
+    }
+    .dropzone:hover,
+    .dropzone.is-dragover {
+      border-color: var(--accent);
+      background-color: var(--accent-tint);
+    }
+    .dropzone:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-ring);
+    }
+    .dropzone.has-file {
+      border-style: solid;
+      cursor: default;
+      padding: 1.125rem 1.25rem;
+      background-color: var(--surface-raised);
+    }
+    .dropzone.has-file:hover { border-color: var(--border); background-color: var(--surface-raised); }
+    .dropzone-icon { width: 2rem; height: 2rem; color: var(--accent); }
+    .dropzone-title { font-size: .9375rem; font-weight: 500; color: var(--text); margin: .625rem 0 .125rem; }
+    .dropzone-sub { font-size: .8125rem; color: var(--muted); margin: 0; }
+    .browse-link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
+    .file-name { font-size: .9375rem; font-weight: 500; color: var(--text); }
+
+    /* ---------------------------- Chips ----------------------------- */
+    /* Transparent + bordered, never filled pills. */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: .375rem;
+      padding: .25rem .5rem;
+      font-size: .8125rem;
+      line-height: 1.4;
+    }
+    .chip-core {
+      border-color: var(--accent-border);
+      color: var(--accent-text);
+    }
+
+    .id-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background-color: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: .375rem;
+      padding: .3125rem .5rem;
+      font-size: .75rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      cursor: pointer;
+      transition: border-color .15s ease, color .15s ease;
+    }
+    .id-chip:hover { border-color: var(--accent); color: var(--accent-text); }
+    .id-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+    .id-chip svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--muted); }
+    .id-chip:hover svg { color: var(--accent-text); }
+    .id-chip.copied { border-color: var(--success); color: var(--success); }
+    .id-chip.copied svg { color: var(--success); }
+
+    /* --------------------------- Profile ---------------------------- */
+    .candidate-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+      text-transform: none;
+    }
+    .candidate-caption {
+      font-size: .75rem;
+      color: var(--muted);
+      margin: .1875rem 0 0;
+    }
+    .project-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .project-item {
+      position: relative;
+      padding-left: .875rem;
+      font-size: .875rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .project-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .5rem;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--accent);
+    }
+
+    .divider { height: 1px; background-color: var(--border); margin: 1.125rem 0; }
+
+    /* --------------------------- Results ---------------------------- */
+    .answer-block {
+      background-color: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+      border-radius: .4375rem;
+      padding: .875rem 1rem;
+      font-size: .9375rem;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem;
+      margin-top: .625rem;
+      font-size: .75rem;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .meta-sep { color: var(--border); }
+
+    .chunk-block {
+      background-color: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: .4375rem;
+      padding: .75rem .875rem;
+    }
+    .chunk-block + .chunk-block { margin-top: .625rem; }
+    .chunk-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      margin-bottom: .5rem;
+    }
+    .chunk-label { font-size: .8125rem; font-weight: 600; color: var(--text); }
+    .chunk-score {
+      font-size: .75rem;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .chunk-body {
+      font-size: .8125rem;
+      line-height: 1.6;
+      color: var(--muted);
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    /* ------------------------- Empty state -------------------------- */
+    .empty-state {
+      background-color: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.75rem 1.5rem;
+      text-align: center;
+    }
+    .empty-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      color: var(--muted);
+      opacity: .7;
+    }
+    .empty-title { font-size: .9375rem; font-weight: 500; color: var(--text); margin: .875rem 0 .25rem; }
+    .empty-sub { font-size: .8125rem; color: var(--muted); margin: 0; }
+
+    /* --------------------------- Feedback --------------------------- */
+    .note {
+      display: flex;
+      align-items: flex-start;
+      gap: .5rem;
+      border-radius: .4375rem;
+      padding: .625rem .75rem;
+      font-size: .875rem;
+      line-height: 1.5;
+      border: 1px solid transparent;
+    }
+    .note-success {
+      background-color: var(--success-bg);
+      border-color: rgba(52, 211, 153, .22);
+      color: var(--success);
+    }
+    .note-error {
+      background-color: var(--error-bg);
+      border-color: rgba(248, 113, 113, .22);
+      color: var(--error);
+    }
+    .note-neutral {
+      background-color: var(--surface-raised);
+      border-color: var(--border);
+      color: var(--muted);
+    }
+
+    .loading-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .875rem;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation-duration: 2s; }
+    }
+
+    footer { font-size: .8125rem; color: var(--muted); }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38404c; }
+  </style>
+</head>
+<body>
+
+<nav class="topbar fixed-top">
+  <div class="container app-container d-flex align-items-center justify-content-between py-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="brand">Resume Screener</span>
+    </div>
+    <!-- TODO: replace with your repository URL -->
+    <a class="ghost-link"
+       href="https://github.com/your-username/rag-resume-screener"
+       target="_blank" rel="noopener noreferrer">GitHub</a>
+  </div>
+</nav>
+
+<main class="container app-container py-4">
+
+  <!-- Upload -->
+  <section class="panel mb-3" aria-labelledby="upload-heading">
+    <div class="panel-head">
+      <h2 id="upload-heading" class="panel-title">Upload resume</h2>
+      <span id="upload-id-slot"></span>
+    </div>
+    <div class="panel-body">
+      <form id="upload-form" novalidate>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button"
+             aria-describedby="file-help" aria-label="Upload resume PDF. Click or drag a file here.">
+          <div id="dropzone-empty">
+            <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 16.5V9m0 0-3 3m3-3 3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3.75 3.75 0 0 1 4.156 5.951A4.5 4.5 0 0 1 17.25 19.5H6.75Z" />
+            </svg>
+            <p class="dropzone-title">Drag and drop a PDF here</p>
+            <p class="dropzone-sub">or <span class="browse-link">browse files</span></p>
+          </div>
+          <div id="dropzone-filled" class="d-none">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.5" style="color: var(--accent-text); flex-shrink: 0;" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+              <span id="dropzone-filename" class="file-name text-truncate"></span>
+            </div>
+            <p class="dropzone-sub mt-2">Click “Upload &amp; index” to continue, or drop another file to replace.</p>
+          </div>
+          <input class="visually-hidden" type="file" id="file-input"
+                 accept=".pdf,application/pdf" tabindex="-1">
+        </div>
+
+        <p id="file-help" class="help-text">
+          PDF with a text layer, up to 10 MB. Scanned image-only PDFs are not supported.
+        </p>
+
+        <button class="btn-accent mt-3" type="submit" id="upload-btn" disabled>Upload &amp; index</button>
+      </form>
+
+      <div id="upload-status" class="mt-3" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- Empty state: visible until a resume is indexed -->
+  <section id="empty-state" class="empty-state mb-3">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.5" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+    <p class="empty-title">No resume indexed yet — upload a PDF to start.</p>
+    <p class="empty-sub">The candidate profile and screening results will appear here.</p>
+  </section>
+
+  <!-- Candidate profile: auto-populated via /api/extract after upload -->
+  <section id="profile-card" class="panel mb-3 d-none" aria-labelledby="profile-heading">
+    <div class="panel-head">
+      <h2 id="profile-heading" class="panel-title">Candidate profile</h2>
+    </div>
+    <div class="panel-body" id="profile-body" aria-live="polite"></div>
+  </section>
+
+  <!-- Screening -->
+  <section class="panel mb-3" aria-labelledby="screen-heading">
+    <div class="panel-head">
+      <h2 id="screen-heading" class="panel-title">Screening query</h2>
+    </div>
+    <div class="panel-body">
+      <form id="screen-form" novalidate>
+        <label class="field-label" for="query-input">Question about the candidate</label>
+        <textarea class="input-surface" id="query-input" rows="3" maxlength="1000"
+                  placeholder="e.g. Does the candidate have production Kubernetes experience?"
+                  aria-describedby="query-help" disabled></textarea>
+        <p id="query-help" class="help-text">Upload a resume first. Ctrl+Enter to submit.</p>
+        <button class="btn-accent mt-3" type="submit" id="screen-btn" disabled>Run screening</button>
+      </form>
+
+      <div id="screen-status" class="mt-3" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section id="results" class="panel mb-3 d-none" aria-labelledby="results-heading">
+    <div class="panel-head">
+      <h2 id="results-heading" class="panel-title">Result</h2>
+    </div>
+    <div class="panel-body">
+      <span class="field-label">Answer</span>
+      <div id="answer" class="answer-block"></div>
+      <div id="result-meta" class="meta-row"></div>
+
+      <div class="divider"></div>
+
+      <span class="field-label">Retrieved context</span>
+      <p class="help-text mb-3" style="margin-top: -.25rem;">
+        Chunk 0 is the resume header and is always included, regardless of similarity score.
+        Lower distance means a closer semantic match.
+      </p>
+      <div id="chunks"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="container app-container pb-4">
+  <p class="mb-0">Local RAG pipeline — ChromaDB + Ollama (llama3.2:1b). Nothing leaves your machine.</p>
+</footer>
+
+<script>
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const MODEL_NAME = "llama3.2:1b";
+
+  let currentResumeId = null;
+  let selectedFile = null;
+
+  /* ------------------------------------------------------------------
+     Rendering helpers. Every dynamic value is written with textContent
+     or as a DOM node — never innerHTML — so resume text and server
+     messages can't inject markup.
+     ------------------------------------------------------------------ */
+  function clear(node) { node.replaceChildren(); }
+
+  function showLoading(container, message) {
+    clear(container);
+    const row = document.createElement("div");
+    row.className = "loading-row";
+    row.setAttribute("role", "status");
+    const spinner = document.createElement("div");
+    spinner.className = "spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = message;
+    row.append(spinner, text);
+    container.append(row);
+  }
+
+  function showNote(container, variant, message) {
+    clear(container);
+    const note = document.createElement("div");
+    note.className = `note note-${variant}`;
+    note.setAttribute("role", variant === "error" ? "alert" : "status");
+    const text = document.createElement("span");
+    text.textContent = message;
+    note.append(text);
+    container.append(note);
+    return note;
+  }
+
+  async function readError(response) {
+    try {
+      const body = await response.json();
+      if (typeof body.detail === "string") return body.detail;
+      if (Array.isArray(body.detail)) return body.detail.map((d) => d.msg).join("; ");
+    } catch (_) { /* non-JSON error body */ }
+    return `Request failed (HTTP ${response.status}).`;
+  }
+
+  function copyIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.8");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("d", "M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25c0-.621.504-1.125 1.125-1.125h.375a9 9 0 0 1 9 9v.375c0 .621-.504 1.125-1.125 1.125Z");
+    svg.append(path);
+    return svg;
+  }
+
+  async function copyText(value) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return true;
+      }
+    } catch (_) { /* fall through to legacy path */ }
+    try {
+      const helper = document.createElement("textarea");
+      helper.value = value;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.opacity = "0";
+      document.body.append(helper);
+      helper.select();
+      const ok = document.execCommand("copy");
+      helper.remove();
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /** Resume ID as a bordered, click-to-copy chip. */
+  function buildIdChip(resumeId) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "id-chip";
+    chip.title = "Copy resume ID";
+    chip.setAttribute("aria-label", `Copy resume ID ${resumeId}`);
+
+    const label = document.createElement("span");
+    label.textContent = resumeId;
+    chip.append(label, copyIcon());
+
+    chip.addEventListener("click", async () => {
+      const ok = await copyText(resumeId);
+      const previous = label.textContent;
+      label.textContent = ok ? "Copied" : "Copy failed";
+      chip.classList.toggle("copied", ok);
+      setTimeout(() => {
+        label.textContent = previous;
+        chip.classList.remove("copied");
+      }, 1400);
+    });
+
+    return chip;
+  }
+
+  /* ------------------------------------------------------------------
+     Dropzone: click-to-browse and drag-and-drop both funnel into
+     handleFile so there's a single validation path.
+     ------------------------------------------------------------------ */
+  const dropzone = $("dropzone");
+  const fileInput = $("file-input");
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!/\.pdf$/i.test(file.name)) {
+      showNote($("upload-status"), "error", "That doesn't look like a PDF. Choose a .pdf file.");
+      return;
+    }
+    selectedFile = file;
+    dropzone.classList.add("has-file");
+    $("dropzone-empty").classList.add("d-none");
+    $("dropzone-filled").classList.remove("d-none");
+    $("dropzone-filename").textContent = file.name;
+    $("upload-btn").disabled = false;
+    clear($("upload-status"));
+  }
+
+  dropzone.addEventListener("click", () => fileInput.click());
+  dropzone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      fileInput.click();
+    }
+  });
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+  ["dragenter", "dragover"].forEach((name) => {
+    dropzone.addEventListener(name, (event) => {
+      event.preventDefault();
+      dropzone.classList.add("is-dragover");
+    });
+  });
+  ["dragleave", "dragend", "drop"].forEach((name) => {
+    dropzone.addEventListener(name, () => dropzone.classList.remove("is-dragover"));
+  });
+  dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    handleFile(event.dataTransfer.files && event.dataTransfer.files[0]);
+  });
+
+  /* ------------------------------ Upload ---------------------------- */
+  $("upload-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("upload-status");
+
+    if (!selectedFile) {
+      showNote(status, "error", "Choose a PDF file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    $("upload-btn").disabled = true;
+    showLoading(status, "Extracting text, chunking, and embedding (the first upload also loads the embedding model)...");
+
+    try {
+      const response = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!response.ok) throw new Error(await readError(response));
+      const data = await response.json();
+
+      currentResumeId = data.resume_id;
+
+      showNote(status, "success",
+        `Indexed “${data.filename}” into ${data.total_chunks} chunk${data.total_chunks === 1 ? "" : "s"}.`);
+
+      const slot = $("upload-id-slot");
+      clear(slot);
+      slot.append(buildIdChip(data.resume_id));
+
+      $("empty-state").classList.add("d-none");
+      $("results").classList.add("d-none");
+      $("query-input").disabled = false;
+      $("screen-btn").disabled = false;
+      $("query-help").textContent = "Ctrl+Enter to submit.";
+      $("query-input").focus();
+
+      // Extraction runs on its own; a failure there shouldn't block screening.
+      extractProfile(data.resume_id);
+    } catch (err) {
+      showNote(status, "error", `Upload failed: ${err.message}`);
+    } finally {
+      $("upload-btn").disabled = false;
+    }
+  });
+
+  /* ------------------------- Profile extraction --------------------- */
+  async function extractProfile(resumeId) {
+    const card = $("profile-card");
+    const body = $("profile-body");
+    card.classList.remove("d-none");
+    showLoading(body, `Extracting structured profile via ${MODEL_NAME}...`);
+
+    try {
+      const response = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume_id: resumeId }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      renderProfile(body, await response.json());
+    } catch (err) {
+      showNote(body, "error", `Profile extraction failed: ${err.message}`);
+    }
+  }
+
+  /* Skills arrive as one flat array. Split them into "Core" (languages,
+     frameworks, data/ML libraries, databases) and "Tools/Other"
+     (tooling, platforms, process). Unknown entries fall into
+     Tools/Other, which is the intentional catch-all. */
+  const CORE_SKILLS = new Set([
+    "python", "java", "javascript", "typescript", "go", "golang", "rust", "c", "c++", "c#",
+    "ruby", "php", "scala", "kotlin", "swift", "r", "matlab", "perl", "elixir", "haskell",
+    "sql", "postgresql", "postgres", "mysql", "sqlite", "mssql", "oracle", "mongodb",
+    "redis", "cassandra", "dynamodb", "elasticsearch", "neo4j", "chromadb",
+    "pandas", "numpy", "scipy", "scikit-learn", "sklearn", "tensorflow", "pytorch",
+    "keras", "matplotlib", "seaborn", "plotly", "xgboost", "lightgbm", "opencv", "spacy",
+    "nltk", "huggingface", "transformers", "llm", "llms", "nlp", "machine learning",
+    "deep learning", "data analysis", "statistics", "rag",
+    "react", "react native", "vue", "vue.js", "angular", "svelte", "next.js", "nextjs",
+    "nuxt", "node", "node.js", "nodejs", "express", "django", "flask", "fastapi",
+    "spring", "spring boot", "rails", "ruby on rails", "laravel", ".net", "asp.net",
+    "graphql", "rest", "rest api", "rest apis", "restful apis", "grpc", "websockets",
+    "html", "html5", "css", "css3", "sass", "scss", "tailwind", "tailwind css",
+    "bootstrap", "spark", "pyspark", "hadoop", "kafka", "airflow", "dbt", "snowflake",
+    "databricks", "microservices", "microservices architecture", "distributed systems",
+  ]);
+
+  const TOOL_SKILLS = new Set([
+    "git", "github", "gitlab", "bitbucket", "svn", "vs code", "visual studio code",
+    "vscode", "visual studio", "intellij", "pycharm", "eclipse", "vim", "neovim",
+    "postman", "insomnia", "swagger", "jira", "confluence", "trello", "asana", "notion",
+    "slack", "figma", "docker", "kubernetes", "k8s", "terraform", "ansible", "puppet",
+    "chef", "vagrant", "jenkins", "circleci", "travis ci", "github actions", "ci/cd",
+    "aws", "amazon web services", "azure", "gcp", "google cloud", "heroku", "vercel",
+    "netlify", "digitalocean", "nginx", "apache", "linux", "unix", "ubuntu", "windows",
+    "macos", "bash", "shell", "shell scripting", "powershell", "zsh",
+    "pytest", "unittest", "jest", "mocha", "cypress", "playwright", "selenium", "junit",
+    "jupyter", "jupyter notebook", "anaconda", "conda", "npm", "yarn", "pnpm", "pip",
+    "webpack", "vite", "babel", "eslint", "prettier", "black", "excel", "microsoft excel",
+    "powerpoint", "word", "tableau", "power bi", "looker", "grafana", "prometheus",
+    "datadog", "sentry", "agile", "scrum", "kanban", "jira boards", "ollama",
+  ]);
+
+  function normalizeSkill(skill) {
+    return String(skill).toLowerCase().trim().replace(/[.,;:]+$/, "");
+  }
+
+  function classifySkill(skill) {
+    const key = normalizeSkill(skill);
+    if (!key) return "tools";
+    if (CORE_SKILLS.has(key)) return "core";
+    if (TOOL_SKILLS.has(key)) return "tools";
+
+    // Multi-word or decorated entries ("advanced Python", "React.js"):
+    // fall back to substring matching, but only on keys long enough
+    // that a partial match is meaningful.
+    for (const candidate of CORE_SKILLS) {
+      if (candidate.length >= 3 && (key.includes(candidate) || candidate.includes(key))) return "core";
+    }
+    for (const candidate of TOOL_SKILLS) {
+      if (candidate.length >= 3 && (key.includes(candidate) || candidate.includes(key))) return "tools";
+    }
+    return "tools";
+  }
+
+  function groupSkills(skills) {
+    const core = [];
+    const tools = [];
+    for (const skill of skills || []) {
+      if (typeof skill !== "string" || !skill.trim()) continue;
+      (classifySkill(skill) === "core" ? core : tools).push(skill.trim());
+    }
+    return { core, tools };
+  }
+
+  function buildChipRow(items, variant) {
+    const row = document.createElement("div");
+    row.className = "d-flex flex-wrap gap-2";
+    for (const item of items) {
+      const chip = document.createElement("span");
+      chip.className = variant === "core" ? "chip chip-core" : "chip";
+      chip.textContent = item;
+      row.append(chip);
+    }
+    return row;
+  }
+
+  function buildSkillGroup(label, items, variant) {
+    const wrap = document.createElement("div");
+    wrap.className = "mb-3";
+    const heading = document.createElement("span");
+    heading.className = "field-label";
+    heading.textContent = label;
+    wrap.append(heading, buildChipRow(items, variant));
+    return wrap;
+  }
+
+  function mutedLine(message) {
+    const p = document.createElement("p");
+    p.className = "help-text";
+    p.style.marginTop = "0";
+    p.textContent = message;
+    return p;
+  }
+
+  function renderProfile(container, profile) {
+    clear(container);
+
+    const name = document.createElement("h3");
+    name.className = "candidate-name";
+    name.textContent = profile.name || "Name not found";
+    const caption = document.createElement("p");
+    caption.className = "candidate-caption";
+    caption.textContent = "Extracted from resume";
+    container.append(name, caption);
+
+    const divider = document.createElement("div");
+    divider.className = "divider";
+    container.append(divider);
+
+    const { core, tools } = groupSkills(profile.skills);
+    const skillsSection = document.createElement("div");
+
+    if (core.length === 0 && tools.length === 0) {
+      const label = document.createElement("span");
+      label.className = "field-label";
+      label.textContent = "Skills";
+      skillsSection.append(label, mutedLine("No skills found."));
+    } else {
+      if (core.length) skillsSection.append(buildSkillGroup("Core", core, "core"));
+      if (tools.length) skillsSection.append(buildSkillGroup("Tools / other", tools, "tools"));
+    }
+    container.append(skillsSection);
+
+    const projectsWrap = document.createElement("div");
+    projectsWrap.className = "mt-3";
+    const projectsLabel = document.createElement("span");
+    projectsLabel.className = "field-label";
+    projectsLabel.textContent = "Projects";
+    projectsWrap.append(projectsLabel);
+
+    const projects = Array.isArray(profile.projects) ? profile.projects.filter((p) => p && p.trim()) : [];
+    if (projects.length === 0) {
+      projectsWrap.append(mutedLine("No projects found."));
+    } else {
+      const list = document.createElement("ul");
+      list.className = "project-list";
+      for (const project of projects) {
+        const item = document.createElement("li");
+        item.className = "project-item";
+        item.textContent = project.trim();
+        list.append(item);
+      }
+      projectsWrap.append(list);
+    }
+    container.append(projectsWrap);
+  }
+
+  /* ----------------------------- Screening -------------------------- */
+  $("screen-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("screen-status");
+    const query = $("query-input").value.trim();
+
+    if (!currentResumeId) {
+      showNote(status, "error", "Upload a resume first.");
+      return;
+    }
+    if (!query) {
+      showNote(status, "error", "Enter a screening question.");
+      return;
+    }
+
+    $("screen-btn").disabled = true;
+    $("results").classList.add("d-none");
+    showLoading(status, `Running local inference via ${MODEL_NAME} (takes ~3-8s)...`);
+
+    const startedAt = performance.now();
+    try {
+      const response = await fetch("/api/screen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume_id: currentResumeId, query }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      const data = await response.json();
+      const elapsedSeconds = (performance.now() - startedAt) / 1000;
+
+      clear(status);
+      renderResults(data, elapsedSeconds);
+    } catch (err) {
+      showNote(status, "error", `Screening failed: ${err.message}`);
+    } finally {
+      $("screen-btn").disabled = false;
+    }
+  });
+
+  $("query-input").addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      $("screen-form").requestSubmit();
+    }
+  });
+
+  function renderResults(data, elapsedSeconds) {
+    $("answer").textContent = data.answer;
+
+    // Model/latency metadata lives here, below the answer — not as a
+    // badge in the card header.
+    const sources = Array.isArray(data.sources) ? data.sources : [];
+    const parts = [
+      data.ollama_used ? MODEL_NAME : "Ollama offline — retrieval only",
+      `latency: ~${elapsedSeconds.toFixed(1)}s`,
+      `${sources.length} chunk${sources.length === 1 ? "" : "s"} retrieved`,
+    ];
+
+    const meta = $("result-meta");
+    clear(meta);
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        const sep = document.createElement("span");
+        sep.className = "meta-sep";
+        sep.textContent = "|";
+        meta.append(sep);
+      }
+      const span = document.createElement("span");
+      span.textContent = part;
+      meta.append(span);
+    });
+
+    const container = $("chunks");
+    clear(container);
+
+    if (sources.length === 0) {
+      container.append(mutedLine("No chunks returned."));
+    }
+
+    for (const source of sources) {
+      const block = document.createElement("div");
+      block.className = "chunk-block";
+
+      const head = document.createElement("div");
+      head.className = "chunk-head";
+
+      const label = document.createElement("span");
+      label.className = "chunk-label";
+      label.textContent = `Chunk ${source.chunk_index}`;
+
+      const score = document.createElement("span");
+      score.className = "chunk-score";
+      // The injected header chunk is fetched by index, not by similarity,
+      // so it has no distance to report.
+      score.textContent = source.distance === null || source.distance === undefined
+        ? "Header chunk · always included"
+        : `Distance: ${Number(source.distance).toFixed(2)}`;
+
+      head.append(label, score);
+
+      const body = document.createElement("p");
+      body.className = "chunk-body";
+      body.textContent = source.text;
+
+      block.append(head, body);
+      container.append(block);
+    }
+
+    $("results").classList.remove("d-none");
+  }
+</script>
+</body>
+</html>

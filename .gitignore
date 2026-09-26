@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local vector store — contains indexed resume content, not portfolio code.
+data/
+
+.env
+.kiro/
+.vscode/
+*.log

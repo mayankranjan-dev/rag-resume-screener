@@ -1,0 +1,10 @@
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+data/
+.git/
+.kiro/
+.vscode/
+*.log
