@@ -18,6 +18,7 @@ from app.services.rag import (
     generate_screening_response,
     get_resume_text,
     index_resume_chunks,
+    match_resumes_to_job,
     retrieve_top_chunks,
 )
 
@@ -53,6 +54,28 @@ class ExtractResponse(BaseModel):
     projects: list[str]
 
 
+class MatchRequest(BaseModel):
+    job_description: str = Field(min_length=1, max_length=10000)
+    top_n: int = Field(default=5, ge=1, le=10)
+
+
+class CandidateMatch(BaseModel):
+    rank: int
+    resume_id: str
+    filename: str
+    name: str
+    similarity: float
+    llm_score: int | None
+    explanation: str
+    sources: list[dict]
+
+
+class MatchResponse(BaseModel):
+    matches: list[CandidateMatch]
+    resumes_searched: int
+    ollama_used: bool
+
+
 @router.post("/upload", response_model=UploadResponse)
 def upload_resume(file: UploadFile = File(...)) -> UploadResponse:
     filename = file.filename or "resume.pdf"
@@ -78,7 +101,7 @@ def upload_resume(file: UploadFile = File(...)) -> UploadResponse:
         raise HTTPException(status_code=422, detail="No extractable text found in PDF.")
 
     resume_id = str(uuid.uuid4())
-    total = index_resume_chunks(resume_id, chunks)
+    total = index_resume_chunks(resume_id, chunks, filename)
     return UploadResponse(resume_id=resume_id, filename=filename, total_chunks=total)
 
 
@@ -111,3 +134,15 @@ def extract_resume(request: ExtractRequest) -> ExtractResponse:
         raise HTTPException(status_code=502, detail=f"Extraction failed: {exc}") from exc
 
     return ExtractResponse(**fields)
+
+
+@router.post("/match", response_model=MatchResponse)
+def match_candidates(request: MatchRequest) -> MatchResponse:
+    if not request.job_description.strip():
+        raise HTTPException(status_code=422, detail="Job description must not be blank.")
+
+    result = match_resumes_to_job(request.job_description, request.top_n)
+    if result["resumes_searched"] == 0:
+        raise HTTPException(status_code=404, detail="No resumes indexed yet. Upload at least one PDF first.")
+
+    return MatchResponse(**result)

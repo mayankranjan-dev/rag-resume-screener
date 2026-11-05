@@ -330,6 +330,43 @@
       margin: 0;
     }
 
+    /* ---------------------------- Matches --------------------------- */
+    .match-card {
+      background-color: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .875rem 1rem;
+    }
+    .match-card + .match-card { margin-top: .75rem; }
+    .match-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+    .match-rank {
+      font-size: .75rem;
+      color: var(--accent-text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      margin: 0 0 .125rem;
+    }
+    .match-explanation {
+      font-size: .875rem;
+      line-height: 1.55;
+      color: var(--text);
+      margin: .75rem 0 0;
+    }
+    .match-excerpts { margin-top: .75rem; }
+    .match-excerpts summary {
+      font-size: .8125rem;
+      color: var(--muted);
+      cursor: pointer;
+      width: fit-content;
+    }
+    .match-excerpts summary:hover { color: var(--accent-text); }
+    .match-excerpts .chunk-block { margin-top: .5rem; background-color: var(--surface); }
+
     /* ------------------------- Empty state -------------------------- */
     .empty-state {
       background-color: var(--surface);
@@ -412,7 +449,7 @@
     </div>
     <!-- TODO: replace with your repository URL -->
     <a class="ghost-link"
-       href="https://github.com/your-username/rag-resume-screener"
+       href="https://github.com/mayankranjan-dev/rag-resume-screener"
        target="_blank" rel="noopener noreferrer">GitHub</a>
   </div>
 </nav>
@@ -455,6 +492,7 @@
 
         <p id="file-help" class="help-text">
           PDF with a text layer, up to 10 MB. Scanned image-only PDFs are not supported.
+          Every indexed resume is included when you match candidates to a job below.
         </p>
 
         <button class="btn-accent mt-3" type="submit" id="upload-btn" disabled>Upload &amp; index</button>
@@ -520,6 +558,30 @@
         Lower distance means a closer semantic match.
       </p>
       <div id="chunks"></div>
+    </div>
+  </section>
+
+  <!-- Job match: searches every indexed resume -->
+  <section class="panel mb-3" aria-labelledby="match-heading">
+    <div class="panel-head">
+      <h2 id="match-heading" class="panel-title">Match candidates to a job</h2>
+    </div>
+    <div class="panel-body">
+      <form id="match-form" novalidate>
+        <label class="field-label" for="job-input">Job description</label>
+        <textarea class="input-surface" id="job-input" rows="6" maxlength="10000"
+                  placeholder="Paste a job description, e.g. Senior backend engineer with Python, FastAPI, PostgreSQL and Kubernetes experience."
+                  aria-describedby="job-help"></textarea>
+        <p id="job-help" class="help-text">
+          Embeds the job description, searches every indexed resume, then asks the model to score and
+          explain the closest candidates. Only about the first 200 words are embedded, so put the key
+          requirements first. Ctrl+Enter to submit.
+        </p>
+        <button class="btn-accent mt-3" type="submit" id="match-btn">Rank candidates</button>
+      </form>
+
+      <div id="match-status" class="mt-3" aria-live="polite"></div>
+      <div id="match-results" class="mt-3"></div>
     </div>
   </section>
 </main>
@@ -1015,6 +1077,159 @@
     }
 
     $("results").classList.remove("d-none");
+  }
+
+  /* --------------------------- Job matching ------------------------- */
+  $("match-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("match-status");
+    const results = $("match-results");
+    const jobDescription = $("job-input").value.trim();
+
+    clear(results);
+    if (!jobDescription) {
+      showNote(status, "error", "Paste a job description first.");
+      return;
+    }
+
+    $("match-btn").disabled = true;
+    showLoading(status, `Searching resumes and scoring the closest candidates via ${MODEL_NAME} (can take ~10-40s)...`);
+
+    const startedAt = performance.now();
+    try {
+      const response = await fetch("/api/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_description: jobDescription }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      const data = await response.json();
+
+      clear(status);
+      renderMatches(results, data, (performance.now() - startedAt) / 1000);
+    } catch (err) {
+      showNote(status, "error", `Matching failed: ${err.message}`);
+    } finally {
+      $("match-btn").disabled = false;
+    }
+  });
+
+  $("job-input").addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      $("match-form").requestSubmit();
+    }
+  });
+
+  function buildMatchCard(match) {
+    const card = document.createElement("article");
+    card.className = "match-card";
+
+    const head = document.createElement("div");
+    head.className = "match-head";
+
+    const who = document.createElement("div");
+    const rank = document.createElement("p");
+    rank.className = "match-rank";
+    rank.textContent = `#${match.rank}`;
+    const name = document.createElement("h3");
+    name.className = "candidate-name";
+    name.textContent = match.name || "Unknown candidate";
+    who.append(rank, name);
+    if (match.filename) {
+      const file = document.createElement("p");
+      file.className = "candidate-caption";
+      file.textContent = match.filename;
+      who.append(file);
+    }
+
+    const chips = document.createElement("div");
+    chips.className = "d-flex flex-wrap gap-2";
+    if (match.llm_score !== null && match.llm_score !== undefined) {
+      const fit = document.createElement("span");
+      fit.className = "chip chip-core";
+      fit.textContent = `Fit ${match.llm_score}/10`;
+      chips.append(fit);
+    }
+    const similarity = document.createElement("span");
+    similarity.className = "chip";
+    similarity.textContent = `Similarity ${Number(match.similarity).toFixed(2)}`;
+    chips.append(similarity);
+
+    head.append(who, chips);
+
+    const explanation = document.createElement("p");
+    explanation.className = "match-explanation";
+    explanation.textContent = match.explanation;
+
+    card.append(head, explanation);
+
+    const sources = Array.isArray(match.sources) ? match.sources : [];
+    if (sources.length) {
+      const details = document.createElement("details");
+      details.className = "match-excerpts";
+      const summary = document.createElement("summary");
+      summary.textContent = `Matching resume excerpts (${sources.length})`;
+      details.append(summary);
+
+      for (const source of sources) {
+        const block = document.createElement("div");
+        block.className = "chunk-block";
+
+        const blockHead = document.createElement("div");
+        blockHead.className = "chunk-head";
+        const label = document.createElement("span");
+        label.className = "chunk-label";
+        label.textContent = `Chunk ${source.chunk_index}`;
+        const score = document.createElement("span");
+        score.className = "chunk-score";
+        score.textContent = `Distance: ${Number(source.distance).toFixed(2)}`;
+        blockHead.append(label, score);
+
+        const body = document.createElement("p");
+        body.className = "chunk-body";
+        body.textContent = source.text;
+
+        block.append(blockHead, body);
+        details.append(block);
+      }
+      card.append(details);
+    }
+
+    return card;
+  }
+
+  function renderMatches(container, data, elapsedSeconds) {
+    clear(container);
+    const matches = Array.isArray(data.matches) ? data.matches : [];
+
+    const parts = [
+      `${data.resumes_searched} resume${data.resumes_searched === 1 ? "" : "s"} searched`,
+      data.ollama_used
+        ? `${MODEL_NAME} fit score, then similarity`
+        : "Ollama offline — ranked by vector similarity only",
+      `latency: ~${elapsedSeconds.toFixed(1)}s`,
+    ];
+    const meta = document.createElement("div");
+    meta.className = "meta-row mb-3";
+    meta.style.marginTop = "0";
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        const sep = document.createElement("span");
+        sep.className = "meta-sep";
+        sep.textContent = "|";
+        meta.append(sep);
+      }
+      const span = document.createElement("span");
+      span.textContent = part;
+      meta.append(span);
+    });
+    container.append(meta);
+
+    if (matches.length === 0) {
+      container.append(mutedLine("No matching candidates returned."));
+      return;
+    }
+    for (const match of matches) container.append(buildMatchCard(match));
   }
 </script>
 </body>
